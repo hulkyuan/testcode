@@ -1,0 +1,191 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="" />
+    <title>Piano</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    body {
+        background: #536375
+    }
+
+    #c {
+        border: 1px solid;
+        background: #7b8ca0
+    }
+</style>
+
+<body>
+    <div id="content">
+        <tone-play-toggle></tone-play-toggle>
+    </div>
+    <canvas id=c width=1000 height=200></canvas><br>
+    <!-- <audio style="display:none" src="./examples/assets/always.mp3" controls></audio> -->
+    <audio src='./examples/assets/bluebird.mp4' controls></audio>
+    <button>
+        选择视频
+    </button>
+    <input id="video" type="file" accept="audio/mp4" />
+</body>
+<script>
+    // audioTrackers属性 chrome默认不支持 可以通过chrome:flags enable-experimental-web-platform-features打开
+    // document.querySelector("#video").addEventListener("change", (e) => {
+    //     const files = e.target.files;
+    //     console.log(files);
+    //     if (files.length > 0) {
+    //         const file = files[0];
+    //         parseFile(file);
+    //     }
+    // });
+    // var actx = new (AudioContext || webkitAudioContext)();
+    // function parseFile(file) {
+    //     const reader = new FileReader();
+    //     reader.onload = function (e) {
+    //         console.log(e.target.result);
+    //         actx.decodeAudioData(e.target.result, function (buffer) {
+    //             console.log(buffer);
+    //         }, function (e) { "Error with decoding audio data" + e.err });
+    //     };
+    //     reader.readAsArrayBuffer(file);
+    // }
+    // return;
+    // var ctx = c.getContext("2d"), ref, audio;
+    // var actx = new (AudioContext || webkitAudioContext)();
+    // ctx.font = "20px sans-serif";
+    // ctx.fillText("Loading and processing...", 10, 50);
+    // ctx.fillStyle = "#001730";
+    // const video = document.querySelector('video');
+    // // video.src='./examples/assets/bluebird.mp4';
+    // video.addEventListener("loadedmetadata", function (e) {
+    //     console.log('The duration and dimensions of the media and tracks are now known. ');
+    //     console.log(e.target)
+    // });
+
+</script>
+<!-- <script src="./Tone.js"></script> -->
+<!-- <script src="./tone-ui.js"></script> -->
+<!-- <script src="./components.js"></script> -->
+<!-- <script>
+    const player = new Tone.Player({
+        url: "./examples/assets/gone.mp3",
+        loop: true
+    }).toDestination();
+
+
+    const toneWaveform = new Tone.Waveform();
+    player.connect(toneWaveform);
+
+
+    waveform({
+        tone: toneWaveform,
+        parent: document.querySelector("#content")
+    });
+    ui({
+        tone: player,
+        parent: document.querySelector("#content")
+    });
+    
+    document.querySelector("tone-play-toggle").addEventListener("start", start);
+    document.querySelector("tone-play-toggle").addEventListener("stop", () => player.stop());
+    function start() {
+        player.start();
+        console.log(player.buffer.toArray());
+    }
+</script> -->
+<script>
+    var ctx = c.getContext("2d"), ref, audio;
+    var actx = new (AudioContext || webkitAudioContext)();
+    var url = "./examples/assets/bluebird.mp4";
+    ctx.font = "20px sans-serif";
+    ctx.fillText("Loading and processing...", 10, 50);
+    ctx.fillStyle = "#001730";
+
+    // Load audio
+    fetch(url, { mode: "cors" })
+        .then(function (resp) { return resp.arrayBuffer() })
+        .then(actx.decodeAudioData.bind(actx))
+        .then(function (buffer) {
+            // Get data from channel 0 (you will want to measure all/avg.)
+            console.log(buffer);
+            var channel = buffer.getChannelData(0);
+
+            // dB per window + Plot
+            var points = [0];
+            ctx.clearRect(0, 0, c.width, c.height);
+
+            ctx.moveTo(x, c.height);
+            for (var x = 1, i, v; x < c.width; x++) {
+                i = ((x / c.width) * channel.length) | 0;   // get index in buffer based on x
+                v = Math.abs(dB(channel, i, 8820)) / 40;  // 200ms window, normalize
+                ctx.lineTo(x, c.height * v);
+                if (v !== Infinity) {
+                    break;
+                }
+                points.push(v);
+                // console.log(v);
+
+            }
+            // console.log(points);
+            ctx.fill();
+
+            // smooth using bins
+            var bins = 40;  // segments
+            var range = (c.width / bins) | 0;
+            var sum;
+            ctx.beginPath();
+            ctx.moveTo(0, c.height);
+            for (x = 0, v; x < points.length; x++) {
+                for (v = 0, i = 0; i < range; i++) {
+                    v += points[x++];
+                }
+                sum = v / range;
+                ctx.lineTo(x - (range >> 1), sum * c.height); //-r/2 to compensate visually
+            }
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#c00";
+            ctx.stroke();
+
+            // for audio / progressbar only
+            c.style.backgroundImage = "url(" + c.toDataURL() + ")";
+            c.width = c.width;
+            ctx.fillStyle = "#c00";
+            audio = document.querySelector("audio");
+            audio.onplay = start;
+            audio.onended = stop;
+            audio.style.display = "block";
+            getStartTime(points);
+        });
+
+    // calculates RMS per window and returns dB
+    function dB(buffer, pos, winSize) {
+        for (var rms, sum = 0, v, i = pos - winSize; i <= pos; i++) {
+            v = i < 0 ? 0 : buffer[i];
+            sum += v * v;
+        }
+        rms = Math.sqrt(sum / winSize);  // corrected!
+        return 20 * Math.log10(rms);
+    }
+    function getStartTime(points) {
+        console.log(audio.duration * points.length / c.width);
+    }
+
+    // for progress bar (audio)
+    function start() { if (!ref) ref = requestAnimationFrame(progress) }
+    function stop() { cancelAnimationFrame(ref); ref = null }
+    function progress() {
+        var x = audio.currentTime / audio.duration * c.width;
+        ctx.clearRect(0, 0, c.width, c.height);
+        ctx.fillRect(x - 1, 0, 2, c.height);
+        ref = requestAnimationFrame(progress);
+    }
+</script>
+
+</html>

@@ -1,0 +1,295 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="" />
+    <title>Piano</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    html,
+    body {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+    }
+</style>
+
+<body>
+
+</body>
+<script src="./stats.min.js"></script>
+<script src="./pixi.js"></script>
+<script src="./pixi-layers.js"></script>
+<script>
+    var stats = new Stats();
+    document.body.appendChild(stats.domElement);
+    stats.domElement.style.position = "absolute";
+    stats.domElement.style.top = "0px";
+
+    const app = new PIXI.Application({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        // transparent: true,
+        resolution: window.devicePixelRatio,
+        antialias: true,
+        autoDensity: true,
+        backgroundColor: 0x000000,
+        backgroundAlpha: 0.1
+    });
+    app.stage = new PIXI.layers.Stage();
+    const layer = new PIXI.layers.Layer();
+    layer.useRenderTexture = true;
+    layer.useDoubleBuffer = true;
+    app.stage.addChild(layer);
+    document.body.appendChild(app.view);
+    var particles = [],
+        max_dota = 100 * 10,
+        viewportWidth = 0,
+        viewportHeight = 0;
+
+    onWindowResize();
+    function onWindowResize() {
+        viewportWidth = window.innerWidth;
+        viewportHeight = window.innerHeight;
+    }
+    // const pc = new PIXI.ParticleContainer({scale: true,
+    // position: true,
+    // rotation: true,
+    // tint:true,
+    // uvs: true,
+    // alpha: true,});
+    const pc = new PIXI.Container();
+    pc.position.x = 0;
+    pc.position.y = 0;
+    app.stage.addChild(pc);
+
+    document.addEventListener('mouseup', createFirework, true);
+    function createFirework() {
+        noteDisappear({
+            x: Math.random() * viewportWidth,
+            y: viewportHeight + 10
+        });
+    }
+    update();
+    function update() {
+        stats.begin();
+        drawFireworks();
+        requestAnimationFrame(update);
+        stats.end();
+
+    }
+    function drawFireworks() {
+        var a = particles.length;
+
+        while (a--) {
+
+            var firework = particles[a];
+            // if the update comes back as true
+            // then our firework should explode
+            if (firework.update()) {
+
+                // kill off the firework, replace it
+                // with the particles for the exploded version
+
+                var removeOne = particles.splice(a, 1);
+                removeOne[0].destory();
+
+            }
+
+            firework.render();
+        }
+    }
+    function noteDisappear(postion) {
+        sinCurve(postion)
+    }
+    function sinCurve(postion) {
+        var count = 1;
+        var i = 0;
+        // var target =
+
+        var vel = {
+            x: Math.random() * 3 - 1.5,
+            y: 0
+        };
+
+        while (i < count) {
+            createParticle(
+                postion,
+                {
+                    y: 100 + Math.random() * 200
+                },
+                vel, {
+                x: i * 0.1,
+                y: i * 0.01
+            }
+            );
+            i++;
+        }
+    }
+    function createParticle(pos, target, vel, interval) {
+        pos = pos || {};
+        target = target || {};
+        vel = vel || {};
+        var points = [{ x: Math.random() * viewportWidth, y: viewportHeight }];
+        var len = 4;
+        for (var i = 0; i < len; i++) {
+            if (i === len - 1) {
+                var direction = Math.random() > 0.5 ? 1 : -1
+                points.push({ x: points[i].x + direction * (Math.random() * 12 + 25), y: points[i].y + (Math.random() * 100 + 50) })
+            } else {
+                var direction = Math.random() > 0.5 ? 1 : -1
+                points.push({ x: points[i].x + direction * (Math.random() * 12 + 12), y: points[i].y - (Math.random() * 100 + 50) })
+            }
+
+        }
+        const dot = new Particle(
+            {
+                x: pos.x || Math.random() * viewportWidth,
+                y: pos.y || viewportHeight + 10
+            },
+
+            // target
+            {
+                y: target.y
+            },
+
+            // velocity
+            {
+                x: vel.x,
+                y: vel.y
+            },
+            interval,
+            points
+        )
+        particles.push(dot);
+        pc.addChild(dot.dot)
+    }
+
+
+    var Particle = function (pos, target, vel, interval, motion) {
+        this.interval = interval;
+        this.dot = PIXI.Sprite.from('./examples/images/small-glow.png');
+        this.motion = motion;
+        this.current = 0;
+        // this.dot.scale.set(Math.random()*0.8+0.2);
+        // this.dot.tint = Math.random() * 10000 * 0x19d3f2;
+        this.dot.tint = 0xffffff;
+
+        this.alpha = 1;
+        this.easing = Math.random() * 0.01;
+        this.ease = 0.1;
+        this.fade = Math.random() * 0.05;
+        this.distanceX = Math.random() * 0.01;
+        this.direction = motion[this.current + 1].x - motion[this.current].x > 0 ? 1 : -1;
+        // this.direction =1
+        this.pos = {
+            x: pos.x,
+            y: motion[this.current].y
+        };
+
+        this.vel = {
+            x: vel.x,
+            y: vel.y
+        };
+
+        this.lastPos = {
+            x: this.pos.x,
+            y: this.pos.y
+        };
+        this.target = {
+            x: motion[this.current + 1].x,
+            y: motion[this.current + 1].y
+        };
+    };
+    /***
+     * 
+     * e 范围在（-1，1）
+     * */
+
+    function easeInSine(x) {
+        return 1 - Math.cos((x * Math.PI) / 2);
+    }
+    Particle.prototype = {
+        update: function () {
+            // console.log(this.pos.y, this.target.y)   
+            if (this.pos.y > this.target.y) {
+                if (this.current + 1 < this.motion.length - 1) {
+                    this.direction = this.motion[this.current + 1].x - this.motion[this.current].x > 0 ? 1 : -1;
+                }
+            } else {
+
+                if (this.current === this.motion.length - 1) {
+                    // return true;
+                } else {
+                    this.current += 1;
+                    this.target = {
+                        x: this.motion[this.current].x,
+                        y: this.motion[this.current].y
+                    };
+                }
+            }
+
+
+
+            this.lastPos.x = this.pos.x;
+            this.lastPos.y = this.pos.y;
+            var distance = 1;
+            var distanceY = (this.target.y - this.pos.y);
+            if (this.current === this.motion.length - 1) {
+                distance = -1
+            }
+            // console.log(distanceY)
+            // ease the position
+            // var vy=(distance * (0.009 + this.easing))
+            // var vy = distance*Math.min(Math.sin(distanceY * (0.009 + this.easing)),-0.5)
+            // var vx = this.direction*Math.abs(Math.sin(distanceY))
+            var vx = (this.target.x - this.pos.x) * (0.009 + this.easing);
+            var vy = (distanceY * (0.009))
+            console.log(vx, vy)
+            if (Math.abs(vx) < 0.01) {
+                this.pos.x = this.target.x;
+            } else {
+                this.pos.x += vx
+            }
+            if (Math.abs(vy) < 0.01) {
+                this.pos.y = this.target.y;
+            } else {
+                this.pos.y += vy;
+            }
+
+
+            // cap to 1
+            // this.alpha = Math.min(distance * distance * 0.0005, 1);
+            // this.alpha *= 0.995
+            // this.distanceX += Math.random() * 0.1;
+            return (this.alpha < 0.01);
+        },
+        destory: function () {
+            pc.removeChild(this.dot)
+        },
+        render: function () {
+            var x = Math.round(this.pos.x),
+                y = Math.round(this.pos.y);
+            this.dot.position.x = x;
+            this.dot.position.y = y;
+
+            this.dot.alpha = this.alpha;
+        }
+
+    };
+
+
+
+</script>
+
+</html>
