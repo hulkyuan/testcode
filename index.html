@@ -7,114 +7,67 @@
     <title>Piano</title>
 </head>
 <style>
-    * {
-        padding: 0;
+
+    body {
         margin: 0;
-        overflow: hidden;
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 900%;
+        animation: gradient 30s ease infinite;
+        height: 100vh;
+        background-attachment: fixed;
+        will-change:background-position;
     }
 
-    .container {
-        width: 100vw; 
-        height: 100vh ;
-        display: flex;
-        justify-content: center; 
-        align-items: center; 
-        background-color: #000
-    }
+    @keyframes gradient {
+        0% {
+            background-position: 0% 50%;
+        }
 
-    #FileDrop {
-        /* position: relative;
-        width: 100%;
-        height: 100px;
-        border: 2px dashed black;
-        color: black;
-        margin: 20px auto; */
-    }
+        50% {
+            background-position: 100% 50%;
+        }
 
-    #FileDrop.Hover {
-        background-color: black;
-        color: white;
-    }
-
-    #FileDrop input {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        left: 0px;
-        top: 0px;
-    }
-
-    #FileDrop #Text {
-        position: absolute;
-        width: 100%;
-        height: 20px;
-        line-height: 20px;
-        left: 0px;
-        top: 50%;
-        transform: translate(0, -50%);
-        text-align: center;
-    }
-
-    textarea {
-        font-family: monospace;
-        height: 300px;
-        width: 100%;
-        display: inline-block;
-        position: relative;
-        float: left;
-    }
-
-    #Results {
-        position: relative;
-        width: 100%;
-        margin: 10px auto;
-    }
-
-    #Description {
-        position: relative;
-        width: 100%;
-        text-align: center;
-        height: 40px;
-        font-size: 16px;
-        margin: 10px auto;
-        font-family: sans-serif;
-    }
-
-    tone-play-toggle {
-        margin-top: 10px;
+        100% {
+            background-position: 0% 50%;
+        }
     }
 </style>
 
 <body id="root">
-    <div style="position:absolute;width:100px;right:0;z-index: 0;">
-        <div id="FileDrop">
-            <div style="position: relative;">
-                <button>
-                    选择视频
-                </button>
-                <input id="video" type="file" accept="audio/mp4" />
-            </div>
-        </div>
-        <button id='record'>录制</button>
-        <button id='stopRecord'>停止</button>
-    </div>
-    <!-- <div class="container">
-        <div id="recordContainer"></div>
-    </div> -->
-    <!-- <video id="playingvideo"
-        style="position: absolute;height: 100%;transform: translate(-50%,-50%);top: 50%;left: 50%;z-index:-1"></video> -->
-    <img style="max-width:100%;position:absolute;bottom:0px" src="./examples/assets/1.pdf" />
-    <!-- <script src="CCapture.all.min.js"></script> -->
-    <script type="text/javascript" src="./CCapture2.js"></script>
-	<script type="text/javascript" src="./download.js"></script>
-    <script type="text/javascript" src="./webm-writer-0.2.0.js"></script>
-	<script type="text/javascript" src="./Whammy.js"></script>
+
     <script src="./pixi.js"></script>
-    <script src="./app.js"></script>
-    <script src="./slider.js"></script>
-    <!-- <script src="./main.js"></script> -->
-    <script src="./video.js"></script>
+    <script src="./pixi-filters.js"></script>
+    <script>
+        const app = new PIXI.Application({
+            width: window.innerWidth,
+            height: window.innerHeight,
+            resolution: window.devicePixelRatio,
+            antialias: true,
+            autoDensity: true,
+            backgroundColor: 0x000000,
+        });
+        // document.body.appendChild(app.view);
+        // const particleContainer = new PIXI.ParticleContainer(100000,
+        //     {
+        //         scale: true,
+        //         position: true,
+        //         uvs: true,
+        //         tint: true,
+        //         alpha: true,
+        //     })
+        const particleContainer = new PIXI.Container()
+        app.stage.addChild(particleContainer)
+        let particles = []
+        class Particle extends PIXI.Sprite {
+            constructor(texture) {
+                super(texture);
+                this.filters=new PIXI.filters.AdvancedBloomFilter(0.5)
+            }
+        }
+        for (let i = 0; i < 1; i++) {
+            particleContainer.addChild(new Particle(PIXI.Texture.from("./small-glow.png")));
+        }
+    </script>
 </body>
 
 </html>

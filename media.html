@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多媒体操作</title>
+</head>
+
+<body>
+    <input id="video" type="file" accept="audio/mp4" />
+    <button class="play">播放</button>
+    <button class="stop">暂停</button>
+</body>
+<script>
+    var myaudio = document.querySelector("#myaudio")
+    var actx = new (AudioContext || webkitAudioContext)();
+    var audioCtx = new AudioContext();
+    // var source = audioCtx.createMediaElementSource(myaudio);
+    var source = audioCtx.createBufferSource();
+    var play = document.querySelector('.play');
+    var stop = document.querySelector('.stop');
+    document.querySelector("#video").addEventListener("change", async (e) => {
+        const files = e.target.files;
+        if (files.length > 0) {
+            const file = files[0];
+            const audioData = await parseFile(file);
+        }
+    });
+    function parseFile(file) {
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+        return new Promise((resolve, reject) => {
+            reader.onload = function (e) {
+                actx.decodeAudioData(e.target.result, (buffer) => {
+                    source.buffer = buffer;
+                    source.connect(audioCtx.destination);
+                    source.loop = true;
+                    console.log(buffer)
+                }, (error) => {
+
+                })
+            }
+        })
+
+    }
+    play.onclick = function () {
+        source.start(0);
+        play.setAttribute('disabled', 'disabled');
+    }
+
+    stop.onclick = function () {
+        source.stop(0);
+        play.removeAttribute('disabled');
+    }
+</script>
+
+</html>

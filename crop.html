@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="" />
+    <title>Piano</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    html,
+    body {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+    }
+</style>
+
+<body>
+
+</body>
+<script src="./pixi.js"></script>
+<script>
+    const app = new PIXI.Application({
+        resizeTo: window,
+        backgroundColor: 0x999999
+    });
+    document.body.appendChild(app.view);
+
+
+    class Marquee extends PIXI.Container {
+        constructor(options) { // lineWidth = 2, dashSpace = lineWidth) {
+            super();
+            const {
+                thickness,
+                dash,
+                dashSpace
+            } = Object.assign(this, {
+                thickness: 2,
+                dash: 2,
+                dashSpace: 2,
+                speed: 0.2,
+            }, options);
+            this.dragging = false;
+            this.time = 0;
+            this.interactive = true;
+            this.cursor = 'grab';
+            this.bg = new PIXI.Graphics();
+            this.bg.beginFill(0x000000);
+            this.bg.drawRect(0, 0, 2, 2);
+            this.bg.endFill();
+            this.bg.interactive = true;
+            this.bg.alpha = 0;
+            this.startX = 0;
+            this.startY = 0;
+            this.bg.on('pointerdown', (event) => {
+                this.dragging = true;
+                event.stopPropagation();
+                this.startX = event.data.global.x;
+                this.startY = event.data.global.y;
+            });
+            this.bg.on('pointermove', (event) => {
+                if (this.dragging) {
+                    event.stopPropagation();
+                    const offsetX = event.data.global.x - this.startX;
+                    const offsetY = event.data.global.y - this.startY;
+                    this.position.x += offsetX;
+                    this.position.y += offsetY;
+                    this.startX = event.data.global.x;
+                    this.startY = event.data.global.y;
+
+                }
+            });
+            app.stage.on('pointerup', (event) => {
+                if (this.dragging) {
+                    this.dragging = false;
+                    event.stopPropagation();
+                    this.getBoundry();
+                }
+            });
+            // Draw a 4 x 4 texture as a grid
+            const spacer = (dashSpace - dash);
+            const canvas = document.createElement('canvas');
+            canvas.width = dash + dashSpace;
+            canvas.height = dash + dashSpace;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, dash, dash);
+            const texture = PIXI.Texture.from(canvas, {
+                scaleMode: PIXI.SCALE_MODES.NEAREST,
+            });
+
+            this.topLine = new PIXI.TilingSprite(texture, 100, thickness);
+            this.leftLine = new PIXI.TilingSprite(texture, thickness, 100);
+            this.rightLine = new PIXI.TilingSprite(texture, thickness, 100);
+            this.bottomLine = new PIXI.TilingSprite(texture, 100, thickness);
+            this.setSize(0, 0, 100, 100);
+            this.addChild(
+                this.topLine,
+                this.leftLine,
+                this.rightLine,
+                this.bottomLine,
+                this.bg
+            );
+        }
+
+        setSize(x, y, width, height) {
+            const l = this.thickness;
+            this.topLine.position.set(x - l, y - l);
+            this.leftLine.position.set(x - l, y);
+            this.rightLine.position.set(x + width, y);
+            this.bottomLine.position.set(x - l, y + height);
+            this.topLine.width = width + l * 2;
+            this.bottomLine.width = width + l * 2;
+            this.leftLine.height = height;
+            this.rightLine.height = height;
+            this.bg.width = this.topLine.width - 2;
+            this.bg.height = this.leftLine.height;
+        }
+
+        animate() {
+            if (this.visible) {
+                this.time += this.speed;
+                const size = this.dash + this.dashSpace;
+                // avoid large numbers for the position as precision
+                // issues will cause this to stop working
+                this.topLine.tilePosition.x = this.time % size;
+                this.bottomLine.tilePosition.x = -this.time % size;
+                this.leftLine.tilePosition.y = -this.time % size;
+                this.rightLine.tilePosition.y = this.time % size;
+            }
+        }
+        getBoundry() {
+
+            const boundy = {
+                // x: this.getGlobalPosition(this.position).x,
+                // y: this.getGlobalPosition(this.position).y,
+                x: this.position.x,
+                y: this.position.y,
+                width: this.width,
+                height: this.height
+            }
+            // console.log(this.position,this.toGlobal(this.position))
+            // console.log(boundy)
+        }
+    }
+
+    const marquee = new Marquee({
+        dash: 4,
+        dashSpace: 4,
+        thickness: 1,
+        speed: 0.4,
+    });
+    marquee.visible = true;
+    marquee.alpha = 0.8;
+
+    let dragging = false;
+    marquee.position.set(app.screen.width / 2 - marquee.width / 2, app.screen.height / 2 - marquee.height / 2)
+    app.stage.addChild(marquee);
+    app.stage.interactive = true;
+    app.stage.hitArea = app.screen;
+    app.stage.on('pointerdown', (event) => {
+        dragging = true;
+        marquee.position.copyFrom(event.data.global);
+        marquee.visible = true;
+        marquee.setSize(0, 0, 2, 2);
+    }, false);
+    app.stage.on('pointermove', (event) => {
+        if (dragging) {
+            const width = event.data.global.x - marquee.x;
+            const height = event.data.global.y - marquee.y;
+            marquee.setSize(
+                0,
+                0,
+                width,
+                height
+            );
+        }
+    });
+    app.stage.on('pointerup', (event) => {
+        dragging = false;
+
+    });
+
+    app.ticker.add(() => {
+        marquee.animate();
+    });
+
+
+</script>
+
+</html>

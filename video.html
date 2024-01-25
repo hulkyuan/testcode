@@ -29,7 +29,7 @@
     </div>
     <canvas id=c width=1000 height=200></canvas><br>
     <!-- <audio style="display:none" src="./examples/assets/always.mp3" controls></audio> -->
-    <audio src='./examples/assets/bluebird.mp4' controls></audio>
+    <audio  controls></audio>
     <button>
         选择视频
     </button>
@@ -103,7 +103,7 @@
 <script>
     var ctx = c.getContext("2d"), ref, audio;
     var actx = new (AudioContext || webkitAudioContext)();
-    var url = "./examples/assets/bluebird.mp4";
+    var url = "./examples/assets/test.mp4";
     ctx.font = "20px sans-serif";
     ctx.fillText("Loading and processing...", 10, 50);
     ctx.fillStyle = "#001730";
