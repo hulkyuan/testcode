@@ -35,7 +35,59 @@
     });
     document.body.appendChild(app.view);
 
+    class DragBar extends PIXI.Sprite {
+        constructor(options) {
+            super();
+            this.dragging = false;
+            this.interactive = true;
+            this.cursor = options.cursor;
+            this.type = options.type;
+            const canvas = document.createElement('canvas');
+            const width = 6;
+            canvas.width = width;
+            canvas.height = width;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, width);
+            const texture = PIXI.Texture.from(canvas, {
+                scaleMode: PIXI.SCALE_MODES.NEAREST,
+            });
+            this.bar = new PIXI.Sprite(texture);
+            this.bar.anchor.set(0.5);
+            this.addChild(this.bar);
+            this.startX = 0;
+            this.startY = 0;
+            this.on('pointerdown', (event) => {
+                this.dragging = true;
+                event.stopPropagation();
+                this.startX = event.data.global.x;
+                this.startY = event.data.global.y;
+            });
+            this.on('pointermove', (event) => {
+                if (this.dragging) {
+                    event.stopPropagation();
+                    const offsetX = event.data.global.x - this.startX;
+                    const offsetY = event.data.global.y - this.startY;
+                    if (this.type === 'left' || this.type === 'right') {
+                        this.position.x += offsetX;
+                    }
+                    if (this.type === 'top' || this.type === 'bottom') {
+                        this.position.y += offsetY;
+                    }
+                    options.move(options.type, { x: offsetX, y: offsetY })
+                    this.startX = event.data.global.x;
+                    this.startY = event.data.global.y;
 
+                }
+            });
+            app.stage.on('pointerup', (event) => {
+                if (this.dragging) {
+                    this.dragging = false;
+                    event.stopPropagation();
+                }
+            });
+        }
+    }
     class Marquee extends PIXI.Container {
         constructor(options) { // lineWidth = 2, dashSpace = lineWidth) {
             super();
@@ -52,7 +104,7 @@
             this.dragging = false;
             this.time = 0;
             this.interactive = true;
-            this.cursor = 'grab';
+            this.cursor = 'move';
             this.bg = new PIXI.Graphics();
             this.bg.beginFill(0x000000);
             this.bg.drawRect(0, 0, 2, 2);
@@ -97,21 +149,68 @@
             const texture = PIXI.Texture.from(canvas, {
                 scaleMode: PIXI.SCALE_MODES.NEAREST,
             });
-
             this.topLine = new PIXI.TilingSprite(texture, 100, thickness);
             this.leftLine = new PIXI.TilingSprite(texture, thickness, 100);
             this.rightLine = new PIXI.TilingSprite(texture, thickness, 100);
             this.bottomLine = new PIXI.TilingSprite(texture, 100, thickness);
-            this.setSize(0, 0, 100, 100);
             this.addChild(
                 this.topLine,
                 this.leftLine,
                 this.rightLine,
                 this.bottomLine,
-                this.bg
+                this.bg,
             );
+            this.setBar();
+            this.setSize(0, 0, 100, 100);
         }
-
+        setBar() {
+            const canvas = document.createElement('canvas');
+            const width = 6;
+            canvas.width = width;
+            canvas.height = width;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, width);
+            const texture = PIXI.Texture.from(canvas, {
+                scaleMode: PIXI.SCALE_MODES.NEAREST,
+            });
+            this.topBar = new DragBar({ cursor: 'ns-resize', type: 'top', move: this.move })
+            this.leftBar = new DragBar({ cursor: 'ew-resize', type: 'left', move: this.move })
+            this.rightBar = new DragBar({ cursor: 'ew-resize', type: 'right', move: this.move })
+            this.bottomBar = new DragBar({ cursor: 'ns-resize', type: 'bottom', move: this.move })
+            this.addChild(this.topBar,
+                this.leftBar,
+                this.rightBar,
+                this.bottomBar)
+        }
+        move = (type, data) => {
+            const l = this.thickness;
+            if (type === 'top') {
+                this.topLine.position.y = this.topBar.position.y;
+                this.leftLine.position.y = this.topBar.position.y + l;
+                this.rightLine.position.y = this.topBar.position.y + l;
+                this.leftLine.height -= data.y;
+                this.rightLine.height -= data.y;
+            } else if (type === 'bottom') {
+                this.bottomLine.position.y = this.bottomBar.position.y;
+                this.leftLine.height += data.y;
+                this.rightLine.height += data.y;
+            } else if (type === 'left') {
+                this.leftLine.position.x = this.leftBar.position.x;
+                this.topLine.position.x = this.leftBar.position.x + l;
+                this.bottomLine.position.x = this.leftBar.position.x + l;
+                this.topLine.width -= data.x;
+                this.bottomLine.width -= data.x;
+            } else if (type === 'right') {
+                this.rightLine.position.x = this.rightBar.position.x;
+                this.topLine.width += data.x;
+                this.bottomLine.width += data.x;
+            }
+            this.bg.position.set(this.topLine.position.x, this.topLine.position.y + l)
+            this.bg.width = this.topLine.width - 2;
+            this.bg.height = this.leftLine.height;
+            this.putDragBar();
+        }
         setSize(x, y, width, height) {
             const l = this.thickness;
             this.topLine.position.set(x - l, y - l);
@@ -122,10 +221,18 @@
             this.bottomLine.width = width + l * 2;
             this.leftLine.height = height;
             this.rightLine.height = height;
+            this.bg.position.set(0)
             this.bg.width = this.topLine.width - 2;
             this.bg.height = this.leftLine.height;
-        }
 
+            this.putDragBar();
+        }
+        putDragBar() {
+            this.topBar.position.set(this.topLine.position.x + this.topLine.width / 2, this.topLine.position.y);
+            this.leftBar.position.set(this.leftLine.position.x, this.leftLine.position.y + this.leftLine.height / 2);
+            this.rightBar.position.set(this.rightLine.position.x, this.rightLine.position.y + this.rightLine.height / 2);
+            this.bottomBar.position.set(this.bottomLine.position.x + this.bottomLine.width / 2, this.bottomLine.position.y);
+        }
         animate() {
             if (this.visible) {
                 this.time += this.speed;
@@ -167,14 +274,24 @@
     app.stage.addChild(marquee);
     app.stage.interactive = true;
     app.stage.hitArea = app.screen;
+    let startX, startY = 0;
+    let clickDown = false;
     app.stage.on('pointerdown', (event) => {
         dragging = true;
-        marquee.position.copyFrom(event.data.global);
+        // marquee.position.copyFrom(event.data.global);
+        startX = event.data.global.x;
+        startY = event.data.global.y;
+        clickDown = true;
         marquee.visible = true;
-        marquee.setSize(0, 0, 2, 2);
+        // marquee.setSize(0, 0, 2, 2);
     }, false);
     app.stage.on('pointermove', (event) => {
+        if (clickDown) {
+            marquee.position.copyFrom({ x: startX, y: startY });
+            clickDown = false;
+        }
         if (dragging) {
+
             const width = event.data.global.x - marquee.x;
             const height = event.data.global.y - marquee.y;
             marquee.setSize(
@@ -187,7 +304,7 @@
     });
     app.stage.on('pointerup', (event) => {
         dragging = false;
-
+        clickDown = false;
     });
 
     app.ticker.add(() => {
