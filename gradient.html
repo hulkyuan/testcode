@@ -27,19 +27,27 @@
 <body>
     <div style="position: absolute;">
         <input type="number" id="height" name="height" value="50" />
-        <input id="edit" type="button" value="绘制" />
+        <input type="number" id="width" name="width" value="100" />
+        <div>
+            <input id="edit" type="button" value="更新" />
+        </div>
     </div>
 </body>
 <script src="./pixi.js"></script>
 <script>
     var height = getHeight();
+    var width = getWidth();
     var edit = document.getElementById("edit");
     edit.addEventListener("click", function () {
         height = getHeight();
-        ajustHeight();
+        width = getWidth();
+        ajustPosition();
     });
     function getHeight() {
-        return document.getElementById("height").value;
+        return Number(document.getElementById("height").value);
+    }
+    function getWidth() {
+        return Number(document.getElementById("width").value);
     }
     const app = new PIXI.Application({ antialias: true, resizeTo: window, backgroundColor: 0xffffff });
 
@@ -66,16 +74,16 @@
 
         return PIXI.Texture.from(canvas);
     }
-    function ajustHeight() {
-        sprite.height = height;
+    function ajustPosition() {
+        blackGrad.height = height;
+        blackGrad.width = width / 100 * app.screen.width;
+        blackGrad.position.set(0, app.screen.height - height);
     }
     const gradTexture = createGradTexture();
 
     const blackGrad = new PIXI.Sprite(gradTexture);
-    // const height = 50;
-    blackGrad.position.set(0, app.screen.height - height);
-    blackGrad.width = app.screen.width;
-    blackGrad.height = height;
+    ajustPosition()
+
     app.stage.addChild(blackGrad);
 
 
