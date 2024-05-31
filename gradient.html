@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="" />
+    <title>Piano</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    html,
+    body {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        overflow: hidden;
+    }
+</style>
+
+<body>
+    <div style="position: absolute;">
+        <input type="number" id="height" name="height" value="50" />
+        <input id="edit" type="button" value="绘制" />
+    </div>
+</body>
+<script src="./pixi.js"></script>
+<script>
+    var height = getHeight();
+    var edit = document.getElementById("edit");
+    edit.addEventListener("click", function () {
+        height = getHeight();
+        ajustHeight();
+    });
+    function getHeight() {
+        return document.getElementById("height").value;
+    }
+    const app = new PIXI.Application({ antialias: true, resizeTo: window, backgroundColor: 0xffffff });
+
+    document.body.appendChild(app.view);
+
+    function createGradTexture() {
+        // adjust it if somehow you need better quality for very very big images
+        const quality = 256;
+        const canvas = document.createElement('canvas');
+
+        canvas.width = 1;
+        canvas.height = quality;
+
+        const ctx = canvas.getContext('2d');
+
+        // use canvas2d API to create gradient
+        const grd = ctx.createLinearGradient(0, 0, 0, quality);
+
+        grd.addColorStop(0, "rgba(0,0,0,0)");
+        grd.addColorStop(1, "rgba(0,0,0,1)");
+
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 1, quality);
+
+        return PIXI.Texture.from(canvas);
+    }
+    function ajustHeight() {
+        sprite.height = height;
+    }
+    const gradTexture = createGradTexture();
+
+    const blackGrad = new PIXI.Sprite(gradTexture);
+    // const height = 50;
+    blackGrad.position.set(0, app.screen.height - height);
+    blackGrad.width = app.screen.width;
+    blackGrad.height = height;
+    app.stage.addChild(blackGrad);
+
+
+</script>
+
+</html>

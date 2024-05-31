@@ -26,13 +26,62 @@
 
 <body>
     <canvas class="canvas" width="1024" height="128" id="waveform"></canvas>
+    <input id="video" type="file" accept="audio/mp3" />
 </body>
 <script src="./stats.min.js"></script>
 <script src="./pixi7.3.3.js"></script>
 <script src="./pixi-sound.js"></script>
 //pixi-sound v5 版本需要pixi.js v7版本支持
 <script>
+    document.querySelector("#video").addEventListener("change", async (e) => {
+        const files = e.target.files;
+        if (files.length > 0) {
+            const file = files[0];
+            // await parseFile(file);
+            // PIXI.Assets.add({alias:'applause', src:'../resources/sea.mp3'});
+            // PIXI.Assets.load('applause').then(sound => {
+            //     console.log(sound);
+            // })
+            // return;
+            var videoUrl = URL.createObjectURL(file);
+            // const texture = PIXI.Texture.from(videoEle);
+            // console.log(texture.baseTexture.resource.source.src)
+            PIXI.Assets.add({ alias: 'applause', src: videoUrl, loadParser: 'loadVideo' });
+            // const sound = PIXI.sound.Sound.from(videoEle);
+            // console.log(sound)
+            PIXI.Assets.load('applause').then(sound => {
+                console.log(sound);
+                const baseTexture = PIXI.sound.utils.render(sound, {
+                    width: waveform.renderer.width,
+                    height: waveform.renderer.height,
+                    fill: '#999'
+                });
+                
+                const playhead = new PIXI.Graphics()
+                    .beginFill(0xff0000)
+                    .drawRect(0, 0, 1, waveform.renderer.height);
+                const sprite = new PIXI.Sprite(
+                    new PIXI.Texture(baseTexture)
+                );
+                waveform.stage.addChild(sprite, playhead);
+                // sound.play().on('progress', function (value) {
+                //     playhead.x = baseTexture.width * value;
+                // });
+            });
+        }
+    });
+    function parseFile(file) {
+        const reader = new FileReader();
+        var actx = new AudioContext();
+        // reader.onload = loaded;
+        reader.readAsArrayBuffer(file);
 
+        reader.onload = function (e) {
+            const sound = PIXI.sound.Sound.from(e.target.result);
+            console.log(sound);
+
+        }
+    }
     window.waveform = new PIXI.Application({
         width: window.innerWidth,
         height: 128,
@@ -42,24 +91,8 @@
         view: document.getElementById('waveform'),
         backgroundColor: 0xffffff
     });
-    PIXI.Assets.add({alias:'applause', src:'../resources/sea.mp3'});
-    PIXI.Assets.load('applause').then(sound => {
-        const baseTexture = PIXI.sound.utils.render(sound, {
-            width: waveform.renderer.width,
-            height: waveform.renderer.height,
-            fill: '#999'
-        });
-        const playhead = new PIXI.Graphics()
-            .beginFill(0xff0000)
-            .drawRect(0, 0, 1, waveform.renderer.height);
-        const sprite = new PIXI.Sprite(
-            new PIXI.Texture(baseTexture)
-        );
-        waveform.stage.addChild(sprite, playhead);
-        sound.play().on('progress', function (value) {
-            playhead.x = baseTexture.width * value;
-        });
-    });
+    // PIXI.Assets.add({alias:'applause', src:'../resources/sea.mp3'});
+
 </script>
 
 </html>
