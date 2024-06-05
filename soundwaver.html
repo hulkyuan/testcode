@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="" />
+    <title>Piano</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    html,
+    body {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    #waveform {
+        width: 100%;
+    }
+</style>
+
+<body>
+    <div id="waveform"></div>
+    <input id="video" type="file" accept="audio/mp3,video/*" />
+</body>
+<script src="./wavesurfer.min.js"></script>
+<script>
+    const wavesurfer = WaveSurfer.create({
+        container: '#waveform',
+        waveColor: 'rgb(200, 0, 200)',
+        progressColor: 'rgb(100, 0, 100)',
+    })
+
+    wavesurfer.on('click', () => {
+        console.log(wavesurfer.getDuration())
+        wavesurfer.play()
+        var time = wavesurfer.getCurrentTime()
+        console.log(time);
+    })
+    wavesurfer.on('loading', (percent) => {
+        console.log('Loading', percent + '%')
+    })
+    wavesurfer.on('ready', (duration) => {
+        console.log('Ready', duration + 's')
+        URL.revokeObjectURL(audioUrl);
+    })
+    var audioUrl
+    document.querySelector("#video").addEventListener("change", async (e) => {
+        const files = e.target.files;
+        if (files.length > 0) {
+            const file = files[0];
+            audioUrl = URL.createObjectURL(file);
+            wavesurfer.load(audioUrl)
+        }
+    })
+
+
+</script>
+
+</html>
