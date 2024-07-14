@@ -59,10 +59,10 @@
         wavesurfer.play()
     }
     function getZoom() {
-        return Number(document.getElementById("zoom").value);
+        return document.getElementById("zoom").valueAsNumber;
     }
     function getTime() {
-        return Number(document.getElementById("time").value);
+        return document.getElementById("time").valueAsNumber;
     }
     const wavesurfer = WaveSurfer.create({
         container: '#waveform',
